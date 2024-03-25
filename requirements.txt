@@ -1,0 +1,7 @@
+findspark
+pyspark
+kafka-python
+# Add other libraries based on your specific needs (e.g., database connector for MySQL)
+mysql-connector-python
+pandas
+scikit-learn
