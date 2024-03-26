@@ -2,7 +2,7 @@
 
 
 # Specify Kafka brokers addresses and topics
-kafka_config = {'servers':['localhost:9092','localhost:9093','localhost:9094'], 'topics': ['room_sensor_data']}#others may be added..
+kafka_config = {'servers':['localhost:9092','localhost:9093','localhost:9094'], 'topics': ['room_sensor_data_streams','incoming_streams']}#others may be added..
 
 
 

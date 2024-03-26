@@ -5,11 +5,11 @@ findspark.init('/home/amira/Téléchargements/spark-3.5.1-bin-hadoop3')
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from kafka import KafkaConsumer
+#from kafka import KafkaConsumer
 from config import mysql_database_name, mysql_table_name, mysql_hostname, mysql_port
 from config import  mysql_user, mysql_password, kafka_config
 from process_data import process_sensor_data
-from predict import prediction
+from predict import training_prediction, use_existing_model
 
 mysql_driver = 'com.mysql.jdbc.Driver'
 mysql_jdbc_url = 'jdbc:mysql://' + mysql_hostname + ':' + mysql_port + '/' + mysql_database_name
@@ -20,7 +20,7 @@ mysql_jdbc_url = 'jdbc:mysql://' + mysql_hostname + ':' + mysql_port + '/' + mys
 # Spark session configuration
 spark = SparkSession.builder \
   .master("local")\
-  .appName("Sensor_Data_Streaming") \
+  .appName("Data_Streaming") \
   .config("spark.jars", "jars/spark-sql-kafka-0-10_2.12-3.5.0.jar,"\
           "jars/spark-sql_2.12-3.5.1.jar,"\
         "jars/kafka-clients-3.5.0.jar,"\
@@ -43,7 +43,7 @@ def write_stream_to_mysql(dataFrame, id):
     """
 
     print("------------------------herrrrrrrrrrrrre-------------")
-    dataFrame = prediction(dataFrame)
+    dataFrame = training_prediction(dataFrame)
 
     print("heeeeeeeeeeeeeeeeelllllllllllo")
     db_properties = {"user": mysql_user,
@@ -66,10 +66,10 @@ def write_stream_to_mysql(dataFrame, id):
 
 
 # Kafka consumer configuration
-consumer = KafkaConsumer(bootstrap_servers='localhost:9092',
-                         group_id='sensor-data-consumer',
-                         auto_offset_reset='earliest')
-consumer.subscribe(kafka_config['topics'][0])  
+# consumer = KafkaConsumer(bootstrap_servers='localhost:9092',
+#                          group_id='sensor-data-consumer',
+#                          auto_offset_reset='earliest')
+# consumer.subscribe(kafka_config['topics'][0])  
 
 
 # Create a streaming DataFrame from kafka
@@ -96,12 +96,12 @@ schema_2 = types.StructType([
       types.StructField("Light", types.FloatType(), True),
       types.StructField("CO2", types.FloatType(), True),
       types.StructField("HumidityRatio", types.FloatType(), True),
-      types.StructField("Occupancy", types.IntegerType(), True),
+      #types.StructField("Occupancy", types.IntegerType(), True),
   ])
 
 stream = spark.readStream.format("kafka") \
   .option("kafka.bootstrap.servers", ", ".join(kafka_config['servers']))\
-  .option("subscribe", kafka_config['topics'][0]) \
+  .option("subscribe", kafka_config['topics'][1]) \
   .option("startingOffsets", "earliest") \
   .option("failOnDataLoss", "false") \
   .load()\
@@ -131,9 +131,9 @@ processed_stream = process_sensor_data(stream)
 
 # Start streaming query
 query = processed_stream\
-  .option("checkpointLocation", "/tmp/spark-checkpoint") \
+  .option("checkpointLocation", "/tmp/spark-checkpoint8") \
   .outputMode('append') \
-  .foreachBatch(write_stream_to_mysql) \
+  .foreachBatch(use_existing_model) \
   .start()
 
 

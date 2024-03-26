@@ -13,52 +13,74 @@ from pyspark.sql import functions as F
 # Importing the required libraries 
 from pyspark.ml.feature import VectorAssembler, StringIndexer, OneHotEncoder 
 from pyspark.ml import Pipeline 
-
+from pyspark.ml.pipeline import PipelineModel
 # Importing the evaluator 
 from pyspark.ml.evaluation import BinaryClassificationEvaluator 
 
   
+import pickle
 
-
-def prediction(df):
-
-    print("--------------------------ML Prediction STreaming-------------------------")
-
-    # Feature selection (assuming features are not in the first and last columns)
-    features = df.select("Humidity", "Light", "CO2", "HumidityRatio")
-    label = df.select("Occupancy") 
-    print("Features: ",features)
-    print("Label: ",label)
-
-    assembler = VectorAssembler(inputCols=['Temperature', 
-                                       'Humidity','Light', 
-                                       'CO2','HumidityRatio'],
-                                    outputCol='features') 
+def training_prediction(df, id):
+    print("--------------------------ML Prediction Streaming-------------------------")
+    
+    # Assemble features
+    assembler = VectorAssembler(inputCols=['Temperature', 'Humidity', 'Light', 'CO2', 'HumidityRatio'],
+                                outputCol='features')
 
     log_reg = LogisticRegression(featuresCol='features', 
                              labelCol='Occupancy') 
 
-    # Creating the pipeline 
+   
+
+    #loaded_model = pickle.load(open("trained_lg_occupancy.model", 'rb'))
+
+    # Create a pipeline
     pipe = Pipeline(stages=[assembler, log_reg]) 
+    #pipe = Pipeline(stages=[assembler, label_indexer, loaded_model])
 
-    # Splitting the data into train and test 
-    train_data, test_data = df.randomSplit([0.7, .3]) 
-    
-    # Fitting the model on training data 
-    fit_model = pipe.fit(train_data) 
-    
-    # Storing the results on test data 
-    results = fit_model.transform(test_data) 
+    df = df.dropna(subset=['Occupancy'])
 
-    # Calling the evaluator 
-    res = BinaryClassificationEvaluator (rawPredictionCol='prediction',labelCol='Occupancy') 
+    # Splitting the data into train and test
+    train_data, test_data = df.randomSplit([0.8, 0.2])
+    #train_data, test_data = df.randomSplit([0, 1])
+
+    print("*****************train***************** ")
+    train_data.show()
+    print("****************test***************************")
+    test_data.show()
     
-    # Evaluating the AUC on results 
-    ROC_AUC = res.evaluate(results) 
-    print("AUC: ",ROC_AUC)
+    # Fitting the model on training data
+    fit_model = pipe.fit(train_data)
+ 
+
+    # Storing the results on test data
+    results = fit_model.transform(test_data)
+
+    # Evaluating the AUC on results
+    evaluator = BinaryClassificationEvaluator(rawPredictionCol='prediction', labelCol='Occupancy')
+    ROC_AUC = evaluator.evaluate(results)
+    print("AUC:", ROC_AUC)
+
+    # Save model to HDFS to use later in the streaming
+    #filename = './trained_lg_occupancy.sav'
+    fit_model.write().overwrite().save("./model")
 
     return df
 
+
+def use_existing_model(df,id):
+    #filename = './trained_lg_occupancy.sav'
+    loaded_model = PipelineModel.load("./model")
+    predictions = loaded_model.transform(df)
+  
+    # Select example rows to display.
+    predictions.select("prediction", "probability", "features").show(10)
+    
+    
+    return predictions
+
+
+"""
 def apply_model(df, selected_model, plot_flag=True):
  
     print("--------------------------ML STreaming-------------------------")
@@ -121,4 +143,4 @@ def apply_model(df, selected_model, plot_flag=True):
         print(f"Accuracy of {model_title} Classifier on test set: {accuracy:.6f}")
 
 
-
+"""

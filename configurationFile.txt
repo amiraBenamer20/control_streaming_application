@@ -1,0 +1,30 @@
+﻿Launch zookeeper :
+sudo bin/zkServer.sh start conf/zoo.cfg
+in case of an existing one : use 1) stop then, 2) start
+
+Laucnh kafka brokers :
+sudo bin/kafka-server-start.sh config/server.properties
+sudo bin/kafka-server-start.sh config/server-1.properties
+sudo bin/kafka-server-start.sh config/server-2.properties
+in case of an error : bin/kafka-server-stop.sh
+
+create topic : 
+sudo bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 3 --partitions 1 --topic room_sensor_data_streams    #this is used for training the model for the first time
+
+sudo bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 3 --partitions 1 --topic incoming_streams   #this is used to test the model on incoming data
+
+
+Create an environement :
+conda create -n streaming_env python=3.10
+
+Activate the environement : 
+conda activate  streaming_env
+
+To install needed libraries :
+pip install -r requirements.txt
+
+
+Launch consumer :
+/home/amira/Téléchargements/spark-3.5.1-bin - -packages  org.apache.spark :spark-sql_2.12-3.5.1.jar spark_consumer.py
+
+

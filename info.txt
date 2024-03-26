@@ -1,0 +1,13 @@
+
+WHy real-time proocessing? 
+to track in real-time changes and notify if needed (trriger an alert)!
+
+evaluate and process one stream: one entity at the time
+stream processing: operations performed on streaming data to extract useful information
+
+batch duration for the data resource from which we are collecting the data. If the batch duration is 2 seconds, then the data will be collected every 2 seconds
+https://github.com/raphaelmerry/pyspark-kafka-streaming
+
+docker-compose useful links: https://github.com/EthicalML/kafka-spark-streaming-zeppelin-docker?tab=readme-ov-file
+https://github.com/cevatarmutlu/kafka_spark_streaming/blob/master/docker-compose.yml
+https://github.com/mherzog01/medium-articles/blob/master/spark_demo/docker-compose.yml

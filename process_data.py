@@ -23,11 +23,11 @@ def process_sensor_data(stream, relative_error=0.01):
       .agg(count("*").alias("stream_size"))
 
   # Start the streaming query to continuously output the stream size
-  """query = size_stream \
+  query = size_stream \
       .writeStream \
       .outputMode("complete") \
       .format("console") \
-      .start()"""
+      .start()
   query = df \
       .writeStream \
       .format("console") \
